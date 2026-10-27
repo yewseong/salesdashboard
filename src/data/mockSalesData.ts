@@ -526,23 +526,33 @@ export function generate12MonthForecast(
     { short: 'Sep 27', full: 'September 2027', year: 2027, seasonality: 1.14 },
   ];
 
-  // Starting base from latest months
-  const lastBase = 930000;
-  const targetBase = 980000;
+  // Starting baseline from the average actualRevenue of the last 3 completed months (skip isCurrent)
+  const completedMonths = historical.filter(m => !m.isCurrent);
+  const last3Completed = completedMonths.slice(-3);
+  const avgLast3Revenue = last3Completed.length > 0
+    ? last3Completed.reduce((sum, m) => sum + m.actualRevenue, 0) / last3Completed.length
+    : 930000;
 
-  let currentBaseline = lastBase;
-  let currentTarget = targetBase;
+  // Starting target from the last historical month's targetRevenue
+  const lastHistoricalRecord = historical[historical.length - 1];
+  const startingTarget = lastHistoricalRecord ? lastHistoricalRecord.targetRevenue : 980000;
+
+  let currentBaseline = avgLast3Revenue;
+  let currentTarget = startingTarget;
 
   return months.map((m, index) => {
-    // Compound growth
+    // Only growthRatePct and churnRatePct compound
     const monthlyGrowth = 1 + controls.growthRatePct / 100;
     const churnDampener = 1 - controls.churnRatePct / 100;
-    const winRateEffect = 1 + controls.winRateAdjustmentPct / 100;
 
-    currentBaseline = currentBaseline * monthlyGrowth * churnDampener * winRateEffect;
+    currentBaseline = currentBaseline * monthlyGrowth * churnDampener;
     currentTarget = currentTarget * 1.022; // Target grows approx 2.2% monthly
 
-    const baselineSeasoned = Math.round(currentBaseline * m.seasonality);
+    // Apply winRateAdjustmentPct once as a fixed multiplier on every month, not compounded
+    const winRateEffect = 1 + controls.winRateAdjustmentPct / 100;
+    const adjustedBaseline = currentBaseline * winRateEffect;
+
+    const baselineSeasoned = Math.round(adjustedBaseline * m.seasonality);
     const targetSeasoned = Math.round(currentTarget * m.seasonality);
 
     // Scenario calculation
