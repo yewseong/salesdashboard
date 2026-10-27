@@ -1,0 +1,6 @@
+{
+  "name": "Sales Management Dashboard",
+  "description": "Real-time sales dashboard tracking monthly revenue, team performance metrics, 12-month predictive forecasts, and individual KPI reporting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
